@@ -23,7 +23,7 @@ document.addEventListener('mousemove', (e) => {
 });
 
 // Cursor Hover Effects
-document.querySelectorAll('a, img').forEach(el => {
+document.querySelectorAll('a, img, .tech-item').forEach(el => {
     el.addEventListener('mouseenter', () => {
         gsap.to(follower, { scale: 2, borderColor: '#D4AF37', duration: 0.3 });
         gsap.to(cursor, { scale: 0.5, backgroundColor: '#00f3ff', duration: 0.3 });
@@ -59,7 +59,7 @@ gsap.to(".hero-img-container", {
         end: "bottom top",
         scrub: true
     },
-    y: 200, // Move image down slower than scroll
+    y: 200,
     scale: 0.95
 });
 
@@ -106,4 +106,112 @@ menuBtn.addEventListener('mousemove', (e) => {
 
 menuBtn.addEventListener('mouseleave', () => {
     gsap.to(menuBtn, { x: 0, y: 0, duration: 0.5, ease: "elastic.out(1, 0.3)" });
+});
+
+// --- MATRIX RAIN EFFECT ---
+const canvas = document.getElementById('matrix-canvas');
+if (canvas) {
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const katakana = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズブヅプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッン';
+    const latin = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const nums = '0123456789';
+    const alphabet = katakana + latin + nums;
+
+    const fontSize = 16;
+    const columns = canvas.width / fontSize;
+    const raindrops = [];
+
+    for (let x = 0; x < columns; x++) {
+        raindrops[x] = 1;
+    }
+
+    const draw = () => {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = '#D4AF37'; // Gold text
+        ctx.font = fontSize + 'px monospace';
+
+        for (let i = 0; i < raindrops.length; i++) {
+            const text = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+            ctx.fillText(text, i * fontSize, raindrops[i] * fontSize);
+
+            if (raindrops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                raindrops[i] = 0;
+            }
+            raindrops[i]++;
+        }
+    };
+    setInterval(draw, 30);
+}
+
+// --- Text Scramble Effect ---
+class TextScramble {
+    constructor(el) {
+        this.el = el;
+        this.chars = '!<>-_\\/[]{}—=+*^?#________';
+        this.update = this.update.bind(this);
+    }
+    setText(newText) {
+        const oldText = this.el.innerText;
+        const length = Math.max(oldText.length, newText.length);
+        const promise = new Promise((resolve) => this.resolve = resolve);
+        this.queue = [];
+        for (let i = 0; i < length; i++) {
+            const from = oldText[i] || '';
+            const to = newText[i] || '';
+            const start = Math.floor(Math.random() * 40);
+            const end = start + Math.floor(Math.random() * 40);
+            this.queue.push({ from, to, start, end });
+        }
+        cancelAnimationFrame(this.frameRequest);
+        this.frame = 0;
+        this.update();
+        return promise;
+    }
+    update() {
+        let output = '';
+        let complete = 0;
+        for (let i = 0, n = this.queue.length; i < n; i++) {
+            let { from, to, start, end, char } = this.queue[i];
+            if (this.frame >= end) {
+                complete++;
+                output += to;
+            } else if (this.frame >= start) {
+                if (!char || Math.random() < 0.28) {
+                    char = this.randomChar();
+                    this.queue[i].char = char;
+                }
+                output += `<span class="dud">${char}</span>`;
+            } else {
+                output += from;
+            }
+        }
+        this.el.innerHTML = output;
+        if (complete === this.queue.length) {
+            this.resolve();
+        } else {
+            this.frameRequest = requestAnimationFrame(this.update);
+            this.frame++;
+        }
+    }
+    randomChar() {
+        return this.chars[Math.floor(Math.random() * this.chars.length)];
+    }
+}
+
+// Scramble Trigger for Architect Title
+ScrollTrigger.create({
+    trigger: "#architect",
+    start: "top 60%",
+    onEnter: () => {
+        const el = document.querySelector('.glitch-title');
+        if (el) {
+            const fx = new TextScramble(el);
+            fx.setText('THE ARCHITECT');
+        }
+    }
 });
